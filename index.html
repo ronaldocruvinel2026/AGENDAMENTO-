@@ -173,8 +173,8 @@
         <div><span>WhatsApp:</span> <b id="r-phone"></b></div>
         <div><span>Quando:</span> <b id="r-datetime"></b></div>
       </div>
-      <a id="wa-confirm-btn" href="#" target="_blank" class="btn" style="display:block; text-decoration:none; background:#25d366; margin-top:20px;">
-        📲 Confirmar no WhatsApp
+      <a id="cal-btn" href="#" target="_blank" class="btn" style="display:block; text-decoration:none; background:#4285f4; margin-top:20px;">
+        📅 Adicionar à minha agenda
       </a>
       <button class="btn btn-secondary" onclick="location.reload()">Fazer outro agendamento</button>
     </div>
@@ -378,14 +378,31 @@
       document.getElementById('r-phone').textContent = phone;
       document.getElementById('r-datetime').textContent = dia + '/' + mes + '/' + ano + ' às ' + selected.time;
 
-      // Monta a mensagem de confirmação para o cliente enviar ao barbeiro
-      const msgConfirma = 'Olá! Acabei de agendar:%0A%0A' +
-        '👤 ' + name + '%0A' +
-        '✂️ ' + selected.service + ' (R$ ' + selected.price + ')%0A' +
-        '📅 ' + dia + '/' + mes + '/' + ano + ' às ' + selected.time + '%0A%0A' +
-        'Pode confirmar pra mim? 💈';
-      const waBtn = document.getElementById('wa-confirm-btn');
-      waBtn.href = 'https://wa.me/55' + WHATSAPP_BARBEIRO + '?text=' + msgConfirma;
+      // Monta o link para adicionar ao Google Calendar (com lembrete automático)
+      // Duração padrão de 45 min. Formato de data exigido: AAAAMMDDTHHMMSS
+      const [hh, mm] = selected.time.split(':').map(Number);
+      const inicio = new Date(Number(ano), Number(mes) - 1, Number(dia), hh, mm);
+      const fim = new Date(inicio.getTime() + 45 * 60000); // +45 minutos
+
+      function fmtCal(d) {
+        const p = n => String(n).padStart(2, '0');
+        return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) +
+               'T' + p(d.getHours()) + p(d.getMinutes()) + '00';
+      }
+
+      const titulo = encodeURIComponent('💈 ' + selected.service + ' - Barbearia do João');
+      const detalhes = encodeURIComponent(
+        'Serviço: ' + selected.service + ' (R$ ' + selected.price + ')\n' +
+        'Cliente: ' + name
+      );
+      const datas = fmtCal(inicio) + '/' + fmtCal(fim);
+
+      const calLink = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+        '&text=' + titulo +
+        '&dates=' + datas +
+        '&details=' + detalhes;
+
+      document.getElementById('cal-btn').href = calLink;
 
       document.getElementById('form-screen').classList.add('hidden');
       document.getElementById('success-screen').classList.remove('hidden');
