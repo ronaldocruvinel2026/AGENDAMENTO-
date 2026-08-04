@@ -173,6 +173,9 @@
         <div><span>WhatsApp:</span> <b id="r-phone"></b></div>
         <div><span>Quando:</span> <b id="r-datetime"></b></div>
       </div>
+      <a id="wa-confirm-btn" href="#" target="_blank" class="btn" style="display:block; text-decoration:none; background:#25d366; margin-top:20px;">
+        📲 Confirmar no WhatsApp
+      </a>
       <button class="btn btn-secondary" onclick="location.reload()">Fazer outro agendamento</button>
     </div>
 
@@ -188,6 +191,10 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_x-5YEwSadsYimgtYUI0Xew_52km07Zt';
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ⚙️ NÚMERO DE WHATSAPP DO BARBEIRO (com DDD, só números)
+    // Troque pelo número real. Ex: '34991953511'
+    const WHATSAPP_BARBEIRO = '34999999999';
 
     // Configuração de horário (fixa por enquanto)
     const HORARIO_ABERTURA = 9;
@@ -370,6 +377,15 @@
       document.getElementById('r-name').textContent = name;
       document.getElementById('r-phone').textContent = phone;
       document.getElementById('r-datetime').textContent = dia + '/' + mes + '/' + ano + ' às ' + selected.time;
+
+      // Monta a mensagem de confirmação para o cliente enviar ao barbeiro
+      const msgConfirma = 'Olá! Acabei de agendar:%0A%0A' +
+        '👤 ' + name + '%0A' +
+        '✂️ ' + selected.service + ' (R$ ' + selected.price + ')%0A' +
+        '📅 ' + dia + '/' + mes + '/' + ano + ' às ' + selected.time + '%0A%0A' +
+        'Pode confirmar pra mim? 💈';
+      const waBtn = document.getElementById('wa-confirm-btn');
+      waBtn.href = 'https://wa.me/55' + WHATSAPP_BARBEIRO + '?text=' + msgConfirma;
 
       document.getElementById('form-screen').classList.add('hidden');
       document.getElementById('success-screen').classList.remove('hidden');
