@@ -332,12 +332,28 @@
       e.classList.remove('hidden');
     }
 
-    // Gera um arquivo .ics (calendário universal - Apple, Android, Outlook)
-    // com um lembrete automático 1 hora antes.
+    // Adiciona ao calendário escolhendo o melhor método pro aparelho:
+    // - iPhone/iPad/Safari -> arquivo .ics (abre no calendário Apple)
+    // - Android/Chrome/outros -> Google Calendar (abre o app nativo)
     function baixarICS() {
       const ev = window._evento;
       if (!ev) return;
 
+      const ua = navigator.userAgent || '';
+      const ehApple = /iPhone|iPad|iPod|Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|CriOS/.test(ua);
+
+      if (!ehApple) {
+        // Android, Chrome, desktop -> Google Calendar
+        const titulo = encodeURIComponent(ev.titulo);
+        const detalhes = encodeURIComponent(ev.detalhes);
+        const datas = ev.inicio + '/' + ev.fim;
+        const link = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+          '&text=' + titulo + '&dates=' + datas + '&details=' + detalhes;
+        window.open(link, '_blank');
+        return;
+      }
+
+      // iPhone/Safari -> arquivo .ics com lembrete 1h antes
       const ics = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
