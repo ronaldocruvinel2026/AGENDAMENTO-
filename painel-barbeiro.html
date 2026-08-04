@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel do Barbeiro</title>
+  <title>Painel da Barbearia</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -12,11 +12,15 @@
     .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .topbar h1 { font-size: 20px; }
     .topbar .logo { font-size: 24px; }
-    .main-tabs { display: flex; gap: 8px; background: #1a1a1a; padding: 6px; border-radius: 14px; margin-bottom: 24px; }
-    .main-tab { flex: 1; padding: 12px; border-radius: 10px; border: none; background: transparent; color: #888; cursor: pointer; font-size: 15px; font-weight: 600; }
+    .main-tabs { display: flex; gap: 6px; background: #1a1a1a; padding: 6px; border-radius: 14px; margin-bottom: 20px; }
+    .main-tab { flex: 1; padding: 12px 6px; border-radius: 10px; border: none; background: transparent; color: #888; cursor: pointer; font-size: 14px; font-weight: 600; }
     .main-tab.active { background: #4ade80; color: #000; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+    .barber-selector { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 6px; }
+    .barber-chip { flex: 0 0 auto; padding: 10px 16px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: #fff; cursor: pointer; font-size: 14px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+    .barber-chip.active { background: #14351f; border-color: #4ade80; color: #4ade80; font-weight: 600; }
+    .selector-label { color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
     .stat { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 16px 12px; text-align: center; }
     .stat .num { font-size: 24px; font-weight: 700; }
@@ -76,28 +80,30 @@
     .edit-actions { display: flex; gap: 8px; }
     .btn-save { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #4ade80; color: #000; font-weight: 600; cursor: pointer; font-size: 14px; }
     .btn-cancel-edit { flex: 1; padding: 10px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; cursor: pointer; font-size: 14px; }
-    .preview { background: #0f0f0f; border: 2px dashed #333; border-radius: 16px; padding: 20px; }
-    .preview-badge { display: inline-block; background: #14351f; color: #4ade80; font-size: 11px; padding: 4px 10px; border-radius: 20px; margin-bottom: 16px; font-weight: 600; }
-    .preview .p-header { text-align: center; margin-bottom: 16px; }
-    .preview .p-logo { font-size: 32px; }
-    .preview .p-header h2 { font-size: 18px; margin-top: 6px; }
-    .preview .service { display: block; width: 100%; text-align: left; padding: 14px; margin-bottom: 8px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 15px; }
-    .preview .service .price { float: right; color: #4ade80; font-weight: 600; }
+    .barb-item { display: flex; align-items: center; gap: 12px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+    .barb-item .barb-emoji { font-size: 28px; }
+    .barb-item .barb-info { flex: 1; }
+    .barb-item .barb-name { font-size: 16px; font-weight: 600; }
+    .barb-item .barb-count { color: #888; font-size: 13px; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
-      <h1>Barbearia do João</h1>
+      <h1>Painel da Barbearia</h1>
       <div class="logo">💈</div>
     </div>
 
     <div class="main-tabs">
-      <button class="main-tab active" onclick="trocarAba('agenda', this)">📅 Agendamentos</button>
-      <button class="main-tab" onclick="trocarAba('servicos', this)">✂️ Meus Serviços</button>
+      <button class="main-tab active" onclick="trocarAba('agenda', this)">📅 Agenda</button>
+      <button class="main-tab" onclick="trocarAba('servicos', this)">✂️ Serviços</button>
+      <button class="main-tab" onclick="trocarAba('barbeiros', this)">👥 Barbeiros</button>
     </div>
 
     <div id="tab-agenda" class="tab-content active">
+      <div class="selector-label">Barbeiro</div>
+      <div class="barber-selector" id="sel-agenda"></div>
       <div class="stats">
         <div class="stat"><div class="num" id="stat-total">0</div><div class="label">Cortes</div></div>
         <div class="stat"><div class="num" id="stat-done">0</div><div class="label">Feitos</div></div>
@@ -105,14 +111,15 @@
       </div>
       <div class="day-tabs" id="day-tabs"></div>
       <div class="section-label" id="section-label">Agendamentos</div>
-      <div id="list"><div class="loading">Carregando agendamentos...</div></div>
-      <button class="btn" style="background:#25d366; margin-top:16px;" onclick="enviarResumo()">📲 Enviar resumo do dia no WhatsApp</button>
+      <div id="list"><div class="loading">Carregando...</div></div>
     </div>
 
     <div id="tab-servicos" class="tab-content">
+      <div class="selector-label">Barbeiro</div>
+      <div class="barber-selector" id="sel-servicos"></div>
       <div class="panel">
         <div class="panel-title">Adicionar serviço</div>
-        <div class="panel-sub">O que você cadastrar aqui aparece pro cliente na hora de agendar.</div>
+        <div class="panel-sub">Para o barbeiro selecionado acima.</div>
         <div class="form-row"><label>Nome do serviço</label><input id="svc-name" type="text" placeholder="Ex: Corte + Barba + Progressiva"></div>
         <div class="form-row"><label>Preço</label><div class="price-input"><span>R$</span><input id="svc-price" type="number" placeholder="60" min="0" step="1"></div></div>
         <div class="form-row"><label>Duração (minutos)</label><input id="svc-dur" type="number" placeholder="30" min="5" step="5"></div>
@@ -120,45 +127,44 @@
       </div>
       <div class="panel">
         <div class="panel-title">Serviços cadastrados</div>
-        <div class="panel-sub">Toque no ✎ para editar ou ✕ para remover.</div>
-        <div id="lista-barbeiro"><div class="loading">Carregando...</div></div>
+        <div class="panel-sub">Toque no lapis para editar ou X para remover.</div>
+        <div id="lista-servicos"></div>
       </div>
-      <div class="preview">
-        <div class="preview-badge">👁 Como o cliente vê</div>
-        <div class="p-header"><div class="p-logo">💈</div><h2>Barbearia do João</h2></div>
-        <div id="lista-cliente"></div>
+    </div>
+
+    <div id="tab-barbeiros" class="tab-content">
+      <div class="panel">
+        <div class="panel-title">Adicionar barbeiro</div>
+        <div class="panel-sub">Cadastre os profissionais da barbearia.</div>
+        <div class="form-row"><label>Nome</label><input id="barb-name" type="text" placeholder="Ex: Carlos"></div>
+        <div class="form-row"><label>Emoji (avatar)</label><input id="barb-emoji" type="text" placeholder="ok" maxlength="2" value="💈"></div>
+        <button class="btn" id="add-barb-btn" onclick="adicionarBarbeiro()">+ Adicionar barbeiro</button>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Barbeiros cadastrados</div>
+        <div class="panel-sub">Toque no X para remover (apaga tambem os servicos e agenda dele).</div>
+        <div id="lista-barbeiros"></div>
       </div>
     </div>
   </div>
 
   <script>
-    // ============================================
-    // ⚙️ CONFIGURAÇÃO DO SUPABASE
-    // Troque os dois valores abaixo pelos seus.
-    // (Os MESMOS que você colocou na página do cliente)
-    // ============================================
     const SUPABASE_URL = 'https://eaxnvyqriumqrlhqavjz.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_x-5YEwSadsYimgtYUI0Xew_52km07Zt';
-
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ⚙️ NÚMERO DE WHATSAPP DO BARBEIRO (com DDD, só números)
-    // Troque pelo número real. Ex: '34991953511'
-    const WHATSAPP_BARBEIRO = '34999999999';
-
+    let barbeiros = [];
     let servicos = [];
     let agendamentos = [];
     let editandoId = null;
+    let barbeiroAtivo = null;
 
     function hojeMais(n) {
       const d = new Date();
       d.setDate(d.getDate() + n);
-      const ano = d.getFullYear();
-      const mes = String(d.getMonth() + 1).padStart(2, '0');
-      const dia = String(d.getDate()).padStart(2, '0');
-      return ano + '-' + mes + '-' + dia;
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
-    const SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const SEMANA = ['Domingo','Segunda','Terca','Quarta','Quinta','Sexta','Sabado'];
     let diaAtivo = hojeMais(0);
 
     function trocarAba(aba, btn) {
@@ -168,37 +174,47 @@
       document.getElementById('tab-' + aba).classList.add('active');
     }
 
-    async function carregarAgendamentos() {
-      const { data, error } = await db.from('appointments').select('*').order('dia').order('hora');
-      if (error) {
-        document.getElementById('list').innerHTML = '<div class="empty">Erro ao carregar. Verifique a configuração do Supabase.</div>';
-        return;
-      }
-      agendamentos = (data || []).map(a => ({
-        id: a.id, dia: a.dia, hora: a.hora, cliente: a.cliente_nome, telefone: a.cliente_telefone,
+    async function carregarTudo() {
+      const { data: barbs } = await db.from('barbeiros').select('*').eq('ativo', true).order('id');
+      barbeiros = barbs || [];
+      if (barbeiros.length > 0 && barbeiroAtivo === null) barbeiroAtivo = barbeiros[0].id;
+
+      const { data: servs } = await db.from('services').select('*').order('id');
+      servicos = (servs || []).map(s => ({ id: s.id, barbeiro_id: s.barbeiro_id, nome: s.nome, preco: Number(s.preco), duracao: s.duracao_minutos }));
+
+      const { data: ags } = await db.from('appointments').select('*').order('dia').order('hora');
+      agendamentos = (ags || []).map(a => ({
+        id: a.id, barbeiro_id: a.barbeiro_id, dia: a.dia, hora: a.hora,
+        cliente: a.cliente_nome, telefone: a.cliente_telefone,
         servico: a.servico_nome, preco: Number(a.servico_preco), status: a.status
       }));
-      renderAgenda();
+
+      renderSeletores(); renderAgenda(); renderServicos(); renderBarbeiros();
     }
 
-    async function carregarServicos() {
-      const { data, error } = await db.from('services').select('*').order('id');
-      if (error) return;
-      servicos = (data || []).map(s => ({ id: s.id, nome: s.nome, preco: Number(s.preco), duracao: s.duracao_minutos }));
-      renderServicos();
+    function renderSeletores() {
+      ['sel-agenda', 'sel-servicos'].forEach(id => {
+        const c = document.getElementById(id);
+        c.innerHTML = '';
+        if (barbeiros.length === 0) { c.innerHTML = '<div style="color:#666;font-size:14px;">Cadastre um barbeiro na aba Barbeiros.</div>'; return; }
+        barbeiros.forEach(b => {
+          const chip = document.createElement('button');
+          chip.className = 'barber-chip' + (b.id === barbeiroAtivo ? ' active' : '');
+          chip.innerHTML = '<span>' + (b.foto_emoji || '💈') + '</span> ' + b.nome;
+          chip.onclick = () => { barbeiroAtivo = b.id; renderSeletores(); renderAgenda(); renderServicos(); };
+          c.appendChild(chip);
+        });
+      });
     }
 
     function montarAbas() {
       const container = document.getElementById('day-tabs');
       container.innerHTML = '';
-      let dias = [...new Set(agendamentos.map(a => a.dia))].sort();
+      let dias = [...new Set(agendamentos.filter(a => a.barbeiro_id === barbeiroAtivo).map(a => a.dia))].sort();
       if (!dias.includes(hojeMais(0))) dias.unshift(hojeMais(0));
       dias.forEach(dia => {
         const d = new Date(dia + 'T12:00:00');
-        let rotulo;
-        if (dia === hojeMais(0)) rotulo = 'Hoje';
-        else if (dia === hojeMais(1)) rotulo = 'Amanhã';
-        else rotulo = SEMANA[d.getDay()].slice(0,3) + ' ' + d.getDate();
+        let rotulo = dia === hojeMais(0) ? 'Hoje' : dia === hojeMais(1) ? 'Amanha' : SEMANA[d.getDay()].slice(0,3) + ' ' + d.getDate();
         const tab = document.createElement('button');
         tab.className = 'day-tab' + (dia === diaAtivo ? ' active' : '');
         tab.textContent = rotulo;
@@ -207,189 +223,152 @@
       });
     }
 
-    function linkWhats(telefone, cliente, servico, dia, hora) {
-      const [ano, mes, d] = dia.split('-');
-      const msg = 'Olá ' + cliente + '! Confirmando seu ' + servico + ' no dia ' + d + '/' + mes + ' às ' + hora + '. Até lá! 💈';
-      return 'https://wa.me/55' + telefone.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
+    function linkWhats(tel, cli, serv, dia, hora) {
+      const [a, m, d] = dia.split('-');
+      const msg = 'Ola ' + cli + '! Confirmando seu ' + serv + ' no dia ' + d + '/' + m + ' as ' + hora + '. Ate la!';
+      return 'https://wa.me/55' + tel.replace(/\D/g,'') + '?text=' + encodeURIComponent(msg);
     }
 
     async function marcarFeito(id) {
       await db.from('appointments').update({ status: 'done' }).eq('id', id);
-      const a = agendamentos.find(x => x.id === id);
-      if (a) a.status = 'done';
+      const a = agendamentos.find(x => x.id === id); if (a) a.status = 'done';
       renderAgenda();
     }
-
     async function cancelar(id) {
       const a = agendamentos.find(x => x.id === id);
       if (a && confirm('Cancelar o agendamento de ' + a.cliente + '?')) {
         await db.from('appointments').update({ status: 'cancelled' }).eq('id', id);
-        a.status = 'cancelled';
-        renderAgenda();
+        a.status = 'cancelled'; renderAgenda();
       }
     }
 
     function renderAgenda() {
+      if (barbeiroAtivo === null) { document.getElementById('list').innerHTML = '<div class="empty">Cadastre um barbeiro primeiro.</div>'; return; }
       montarAbas();
-      const doDia = agendamentos.filter(a => a.dia === diaAtivo).sort((x, y) => x.hora.localeCompare(y.hora));
+      const doDia = agendamentos.filter(a => a.barbeiro_id === barbeiroAtivo && a.dia === diaAtivo).sort((x,y) => x.hora.localeCompare(y.hora));
       const d = new Date(diaAtivo + 'T12:00:00');
-      let titulo = diaAtivo === hojeMais(0) ? 'Hoje' : SEMANA[d.getDay()] + ', ' + d.getDate();
-      document.getElementById('section-label').textContent = titulo;
+      document.getElementById('section-label').textContent = diaAtivo === hojeMais(0) ? 'Hoje' : SEMANA[d.getDay()] + ', ' + d.getDate();
 
       const ativos = doDia.filter(a => a.status !== 'cancelled');
-      const feitos = doDia.filter(a => a.status === 'done');
       document.getElementById('stat-total').textContent = ativos.length;
-      document.getElementById('stat-done').textContent = feitos.length;
-      document.getElementById('stat-money').textContent = 'R$' + ativos.reduce((s, a) => s + a.preco, 0);
+      document.getElementById('stat-done').textContent = doDia.filter(a => a.status === 'done').length;
+      document.getElementById('stat-money').textContent = 'R$' + ativos.reduce((s,a) => s+a.preco, 0);
 
       const list = document.getElementById('list');
       if (doDia.length === 0) { list.innerHTML = '<div class="empty">Nenhum agendamento neste dia.</div>'; return; }
       list.innerHTML = '';
       doDia.forEach(a => {
         const [hh] = a.hora.split(':');
-        const periodo = parseInt(hh) < 12 ? 'manhã' : (parseInt(hh) < 18 ? 'tarde' : 'noite');
+        const periodo = parseInt(hh) < 12 ? 'manha' : (parseInt(hh) < 18 ? 'tarde' : 'noite');
         const div = document.createElement('div');
         div.className = 'appointment ' + (a.status === 'done' ? 'done' : a.status === 'cancelled' ? 'cancelled' : '');
-        let actionsHtml;
+        let actions;
         if (a.status === 'confirmed') {
-          actionsHtml =
-            '<a href="' + linkWhats(a.telefone, a.cliente, a.servico, a.dia, a.hora) + '" target="_blank" class="action-btn btn-wa">WhatsApp</a>' +
-            '<button class="action-btn btn-done" onclick="marcarFeito(' + a.id + ')">✓ Feito</button>' +
+          actions = '<a href="' + linkWhats(a.telefone,a.cliente,a.servico,a.dia,a.hora) + '" target="_blank" class="action-btn btn-wa">WhatsApp</a>' +
+            '<button class="action-btn btn-done" onclick="marcarFeito(' + a.id + ')">Feito</button>' +
             '<button class="action-btn btn-cancel" onclick="cancelar(' + a.id + ')">Cancelar</button>';
-        } else if (a.status === 'done') {
-          actionsHtml = '<span class="status-tag tag-done">✓ Feito</span>';
-        } else {
-          actionsHtml = '<span class="status-tag tag-cancelled">Cancelado</span>';
-        }
+        } else if (a.status === 'done') actions = '<span class="status-tag tag-done">Feito</span>';
+        else actions = '<span class="status-tag tag-cancelled">Cancelado</span>';
         div.innerHTML =
           '<div class="time-badge"><div class="hour">' + a.hora + '</div><div class="period">' + periodo + '</div></div>' +
-          '<div class="info"><b>' + a.cliente + '</b>' +
-            '<div class="service-line">' + a.servico + ' · R$ ' + a.preco + '</div>' +
-            '<div class="phone">📱 ' + a.telefone + '</div></div>' +
-          '<div class="actions">' + actionsHtml + '</div>';
+          '<div class="info"><b>' + a.cliente + '</b><div class="service-line">' + a.servico + ' - R$ ' + a.preco + '</div><div class="phone">' + a.telefone + '</div></div>' +
+          '<div class="actions">' + actions + '</div>';
         list.appendChild(div);
       });
     }
 
-    // Monta o relatório do dia e abre o WhatsApp pronto pra enviar
-    function enviarResumo() {
-      const doDia = agendamentos
-        .filter(a => a.dia === diaAtivo && a.status !== 'cancelled')
-        .sort((x, y) => x.hora.localeCompare(y.hora));
-
-      const d = new Date(diaAtivo + 'T12:00:00');
-      const [ano, mes, dia] = diaAtivo.split('-');
-      const dataLabel = dia + '/' + mes + '/' + ano;
-
-      let msg = '📋 *RESUMO DO DIA* — ' + dataLabel + '%0A%0A';
-
-      if (doDia.length === 0) {
-        msg += 'Nenhum agendamento para este dia.';
-      } else {
-        let total = 0;
-        doDia.forEach(a => {
-          const check = a.status === 'done' ? '✅' : '🔹';
-          msg += check + ' ' + a.hora + ' — ' + a.cliente + '%0A';
-          msg += '   ' + a.servico + ' (R$ ' + a.preco + ')%0A';
-          total += a.preco;
-        });
-        msg += '%0A💰 *Total previsto: R$ ' + total + '*%0A';
-        msg += '✂️ ' + doDia.length + ' agendamento(s)';
-      }
-
-      const link = 'https://wa.me/55' + WHATSAPP_BARBEIRO + '?text=' + msg;
-      window.open(link, '_blank');
-    }
-
     async function adicionarServico() {
+      if (barbeiroAtivo === null) { alert('Selecione um barbeiro.'); return; }
       const nome = document.getElementById('svc-name').value.trim();
       const preco = parseInt(document.getElementById('svc-price').value);
       const dur = parseInt(document.getElementById('svc-dur').value) || 30;
-      if (!nome) { alert('Digite o nome do serviço.'); return; }
-      if (!preco || preco <= 0) { alert('Digite um preço válido.'); return; }
-      const btn = document.getElementById('add-btn');
-      btn.disabled = true; btn.textContent = 'Adicionando...';
-      const { error } = await db.from('services').insert({ nome, preco, duracao_minutos: dur, ativo: true });
-      btn.disabled = false; btn.textContent = '+ Adicionar serviço';
+      if (!nome) { alert('Digite o nome.'); return; }
+      if (!preco || preco <= 0) { alert('Digite um preco valido.'); return; }
+      const btn = document.getElementById('add-btn'); btn.disabled = true; btn.textContent = 'Adicionando...';
+      const { error } = await db.from('services').insert({ barbeiro_id: barbeiroAtivo, nome, preco, duracao_minutos: dur, ativo: true });
+      btn.disabled = false; btn.textContent = '+ Adicionar servico';
       if (error) { alert('Erro ao adicionar.'); return; }
       document.getElementById('svc-name').value = '';
       document.getElementById('svc-price').value = '';
       document.getElementById('svc-dur').value = '';
-      await carregarServicos();
+      await carregarTudo();
     }
-
     async function removerServico(id) {
-      if (!confirm('Remover este serviço?')) return;
+      if (!confirm('Remover este servico?')) return;
       await db.from('services').delete().eq('id', id);
       if (editandoId === id) editandoId = null;
-      await carregarServicos();
+      await carregarTudo();
     }
-
     function iniciarEdicao(id) { editandoId = id; renderServicos(); }
     function cancelarEdicao() { editandoId = null; renderServicos(); }
-
     async function salvarEdicao(id) {
-      const nome = document.getElementById('edit-nome-' + id).value.trim();
-      const preco = parseInt(document.getElementById('edit-preco-' + id).value);
-      const dur = parseInt(document.getElementById('edit-dur-' + id).value) || 30;
-      if (!nome) { alert('Digite o nome.'); return; }
-      if (!preco || preco <= 0) { alert('Digite um preço válido.'); return; }
+      const nome = document.getElementById('edit-nome-'+id).value.trim();
+      const preco = parseInt(document.getElementById('edit-preco-'+id).value);
+      const dur = parseInt(document.getElementById('edit-dur-'+id).value) || 30;
+      if (!nome || !preco || preco <= 0) { alert('Preencha nome e preco validos.'); return; }
       await db.from('services').update({ nome, preco, duracao_minutos: dur }).eq('id', id);
-      editandoId = null;
-      await carregarServicos();
+      editandoId = null; await carregarTudo();
     }
 
     function renderServicos() {
-      const lb = document.getElementById('lista-barbeiro');
-      if (servicos.length === 0) {
-        lb.innerHTML = '<div class="empty">Nenhum serviço ainda.</div>';
-      } else {
-        lb.innerHTML = '';
-        servicos.forEach(s => {
-          const div = document.createElement('div');
-          if (s.id === editandoId) {
-            div.className = 'svc-item editing';
-            div.innerHTML =
-              '<div class="edit-form">' +
-                '<input id="edit-nome-' + s.id + '" type="text" value="' + s.nome.replace(/"/g, '&quot;') + '" placeholder="Nome">' +
-                '<div class="row">' +
-                  '<input id="edit-preco-' + s.id + '" type="number" value="' + s.preco + '" placeholder="Preço">' +
-                  '<input id="edit-dur-' + s.id + '" type="number" value="' + s.duracao + '" placeholder="Min">' +
-                '</div>' +
-                '<div class="edit-actions">' +
-                  '<button class="btn-save" onclick="salvarEdicao(' + s.id + ')">Salvar</button>' +
-                  '<button class="btn-cancel-edit" onclick="cancelarEdicao()">Cancelar</button>' +
-                '</div>' +
-              '</div>';
-          } else {
-            div.className = 'svc-item';
-            div.innerHTML =
-              '<div class="svc-info"><div class="svc-name">' + s.nome + '</div>' +
-                '<div class="svc-price">R$ ' + s.preco + ' <span class="svc-dur">· ' + s.duracao + ' min</span></div></div>' +
-              '<div class="svc-actions">' +
-                '<button class="icon-btn edit" onclick="iniciarEdicao(' + s.id + ')">✎</button>' +
-                '<button class="icon-btn" onclick="removerServico(' + s.id + ')">✕</button>' +
-              '</div>';
-          }
-          lb.appendChild(div);
-        });
-      }
-      const lc = document.getElementById('lista-cliente');
-      if (servicos.length === 0) {
-        lc.innerHTML = '<div class="empty">Nenhum serviço cadastrado.</div>';
-      } else {
-        lc.innerHTML = '';
-        servicos.forEach(s => {
-          const btn = document.createElement('div');
-          btn.className = 'service';
-          btn.innerHTML = s.nome + ' <span class="price">R$ ' + s.preco + '</span>';
-          lc.appendChild(btn);
-        });
-      }
+      const lista = document.getElementById('lista-servicos');
+      if (barbeiroAtivo === null) { lista.innerHTML = '<div class="empty">Cadastre um barbeiro primeiro.</div>'; return; }
+      const doBarbeiro = servicos.filter(s => s.barbeiro_id === barbeiroAtivo);
+      if (doBarbeiro.length === 0) { lista.innerHTML = '<div class="empty">Nenhum servico ainda para este barbeiro.</div>'; return; }
+      lista.innerHTML = '';
+      doBarbeiro.forEach(s => {
+        const div = document.createElement('div');
+        if (s.id === editandoId) {
+          div.className = 'svc-item editing';
+          div.innerHTML = '<div class="edit-form">' +
+            '<input id="edit-nome-'+s.id+'" type="text" value="'+s.nome.replace(/"/g,'&quot;')+'">' +
+            '<div class="row"><input id="edit-preco-'+s.id+'" type="number" value="'+s.preco+'"><input id="edit-dur-'+s.id+'" type="number" value="'+s.duracao+'"></div>' +
+            '<div class="edit-actions"><button class="btn-save" onclick="salvarEdicao('+s.id+')">Salvar</button><button class="btn-cancel-edit" onclick="cancelarEdicao()">Cancelar</button></div></div>';
+        } else {
+          div.className = 'svc-item';
+          div.innerHTML = '<div class="svc-info"><div class="svc-name">'+s.nome+'</div><div class="svc-price">R$ '+s.preco+' <span class="svc-dur">- '+s.duracao+' min</span></div></div>' +
+            '<div class="svc-actions"><button class="icon-btn edit" onclick="iniciarEdicao('+s.id+')">&#9998;</button><button class="icon-btn" onclick="removerServico('+s.id+')">&#10005;</button></div>';
+        }
+        lista.appendChild(div);
+      });
     }
 
-    carregarAgendamentos();
-    carregarServicos();
+    async function adicionarBarbeiro() {
+      const nome = document.getElementById('barb-name').value.trim();
+      const emoji = document.getElementById('barb-emoji').value.trim() || '💈';
+      if (!nome) { alert('Digite o nome do barbeiro.'); return; }
+      const btn = document.getElementById('add-barb-btn'); btn.disabled = true; btn.textContent = 'Adicionando...';
+      const { error } = await db.from('barbeiros').insert({ nome, foto_emoji: emoji, ativo: true });
+      btn.disabled = false; btn.textContent = '+ Adicionar barbeiro';
+      if (error) { alert('Erro ao adicionar.'); return; }
+      document.getElementById('barb-name').value = '';
+      document.getElementById('barb-emoji').value = '💈';
+      await carregarTudo();
+    }
+    async function removerBarbeiro(id) {
+      const b = barbeiros.find(x => x.id === id);
+      if (!confirm('Remover ' + b.nome + '? Isso apaga os servicos e a agenda dele tambem.')) return;
+      await db.from('barbeiros').delete().eq('id', id);
+      if (barbeiroAtivo === id) barbeiroAtivo = null;
+      await carregarTudo();
+    }
+
+    function renderBarbeiros() {
+      const lista = document.getElementById('lista-barbeiros');
+      if (barbeiros.length === 0) { lista.innerHTML = '<div class="empty">Nenhum barbeiro cadastrado ainda.</div>'; return; }
+      lista.innerHTML = '';
+      barbeiros.forEach(b => {
+        const qtdServ = servicos.filter(s => s.barbeiro_id === b.id).length;
+        const div = document.createElement('div');
+        div.className = 'barb-item';
+        div.innerHTML = '<div class="barb-emoji">' + (b.foto_emoji || '💈') + '</div>' +
+          '<div class="barb-info"><div class="barb-name">' + b.nome + '</div><div class="barb-count">' + qtdServ + ' servico(s)</div></div>' +
+          '<button class="icon-btn" onclick="removerBarbeiro(' + b.id + ')">&#10005;</button>';
+        lista.appendChild(div);
+      });
+    }
+
+    carregarTudo();
   </script>
 </body>
 </html>
