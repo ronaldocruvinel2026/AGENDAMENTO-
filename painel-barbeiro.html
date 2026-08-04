@@ -106,6 +106,7 @@
       <div class="day-tabs" id="day-tabs"></div>
       <div class="section-label" id="section-label">Agendamentos</div>
       <div id="list"><div class="loading">Carregando agendamentos...</div></div>
+      <button class="btn" style="background:#25d366; margin-top:16px;" onclick="enviarResumo()">📲 Enviar resumo do dia no WhatsApp</button>
     </div>
 
     <div id="tab-servicos" class="tab-content">
@@ -140,6 +141,10 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_x-5YEwSadsYimgtYUI0Xew_52km07Zt';
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ⚙️ NÚMERO DE WHATSAPP DO BARBEIRO (com DDD, só números)
+    // Troque pelo número real. Ex: '34991953511'
+    const WHATSAPP_BARBEIRO = '34999999999';
 
     let servicos = [];
     let agendamentos = [];
@@ -264,6 +269,36 @@
           '<div class="actions">' + actionsHtml + '</div>';
         list.appendChild(div);
       });
+    }
+
+    // Monta o relatório do dia e abre o WhatsApp pronto pra enviar
+    function enviarResumo() {
+      const doDia = agendamentos
+        .filter(a => a.dia === diaAtivo && a.status !== 'cancelled')
+        .sort((x, y) => x.hora.localeCompare(y.hora));
+
+      const d = new Date(diaAtivo + 'T12:00:00');
+      const [ano, mes, dia] = diaAtivo.split('-');
+      const dataLabel = dia + '/' + mes + '/' + ano;
+
+      let msg = '📋 *RESUMO DO DIA* — ' + dataLabel + '%0A%0A';
+
+      if (doDia.length === 0) {
+        msg += 'Nenhum agendamento para este dia.';
+      } else {
+        let total = 0;
+        doDia.forEach(a => {
+          const check = a.status === 'done' ? '✅' : '🔹';
+          msg += check + ' ' + a.hora + ' — ' + a.cliente + '%0A';
+          msg += '   ' + a.servico + ' (R$ ' + a.preco + ')%0A';
+          total += a.preco;
+        });
+        msg += '%0A💰 *Total previsto: R$ ' + total + '*%0A';
+        msg += '✂️ ' + doDia.length + ' agendamento(s)';
+      }
+
+      const link = 'https://wa.me/55' + WHATSAPP_BARBEIRO + '?text=' + msg;
+      window.open(link, '_blank');
     }
 
     async function adicionarServico() {
