@@ -136,10 +136,10 @@
     // Troque os dois valores abaixo pelos seus.
     // (Os MESMOS que você colocou na página do cliente)
     // ============================================
-    const SUPABASE_URL = 'COLE_SUA_URL_AQUI';
-    const SUPABASE_ANON_KEY = 'COLE_SUA_CHAVE_ANON_AQUI';
+    const SUPABASE_URL = 'https://eaxnvyqriumqrlhqavjz.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_x-5YEwSadsYimgtYUI0Xew_52km07Zt';
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let servicos = [];
     let agendamentos = [];
@@ -164,7 +164,7 @@
     }
 
     async function carregarAgendamentos() {
-      const { data, error } = await supabase.from('appointments').select('*').order('dia').order('hora');
+      const { data, error } = await db.from('appointments').select('*').order('dia').order('hora');
       if (error) {
         document.getElementById('list').innerHTML = '<div class="empty">Erro ao carregar. Verifique a configuração do Supabase.</div>';
         return;
@@ -177,7 +177,7 @@
     }
 
     async function carregarServicos() {
-      const { data, error } = await supabase.from('services').select('*').order('id');
+      const { data, error } = await db.from('services').select('*').order('id');
       if (error) return;
       servicos = (data || []).map(s => ({ id: s.id, nome: s.nome, preco: Number(s.preco), duracao: s.duracao_minutos }));
       renderServicos();
@@ -209,7 +209,7 @@
     }
 
     async function marcarFeito(id) {
-      await supabase.from('appointments').update({ status: 'done' }).eq('id', id);
+      await db.from('appointments').update({ status: 'done' }).eq('id', id);
       const a = agendamentos.find(x => x.id === id);
       if (a) a.status = 'done';
       renderAgenda();
@@ -218,7 +218,7 @@
     async function cancelar(id) {
       const a = agendamentos.find(x => x.id === id);
       if (a && confirm('Cancelar o agendamento de ' + a.cliente + '?')) {
-        await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id);
+        await db.from('appointments').update({ status: 'cancelled' }).eq('id', id);
         a.status = 'cancelled';
         renderAgenda();
       }
@@ -274,7 +274,7 @@
       if (!preco || preco <= 0) { alert('Digite um preço válido.'); return; }
       const btn = document.getElementById('add-btn');
       btn.disabled = true; btn.textContent = 'Adicionando...';
-      const { error } = await supabase.from('services').insert({ nome, preco, duracao_minutos: dur, ativo: true });
+      const { error } = await db.from('services').insert({ nome, preco, duracao_minutos: dur, ativo: true });
       btn.disabled = false; btn.textContent = '+ Adicionar serviço';
       if (error) { alert('Erro ao adicionar.'); return; }
       document.getElementById('svc-name').value = '';
@@ -285,7 +285,7 @@
 
     async function removerServico(id) {
       if (!confirm('Remover este serviço?')) return;
-      await supabase.from('services').delete().eq('id', id);
+      await db.from('services').delete().eq('id', id);
       if (editandoId === id) editandoId = null;
       await carregarServicos();
     }
@@ -299,7 +299,7 @@
       const dur = parseInt(document.getElementById('edit-dur-' + id).value) || 30;
       if (!nome) { alert('Digite o nome.'); return; }
       if (!preco || preco <= 0) { alert('Digite um preço válido.'); return; }
-      await supabase.from('services').update({ nome, preco, duracao_minutos: dur }).eq('id', id);
+      await db.from('services').update({ nome, preco, duracao_minutos: dur }).eq('id', id);
       editandoId = null;
       await carregarServicos();
     }
