@@ -173,9 +173,9 @@
         <div><span>WhatsApp:</span> <b id="r-phone"></b></div>
         <div><span>Quando:</span> <b id="r-datetime"></b></div>
       </div>
-      <a id="cal-btn" href="#" target="_blank" class="btn" style="display:block; text-decoration:none; background:#4285f4; margin-top:20px;">
+      <button id="ics-btn" class="btn" style="background:#4285f4; margin-top:20px;" onclick="baixarICS()">
         📅 Adicionar à minha agenda
-      </a>
+      </button>
       <button class="btn btn-secondary" onclick="location.reload()">Fazer outro agendamento</button>
     </div>
 
@@ -332,6 +332,42 @@
       e.classList.remove('hidden');
     }
 
+    // Gera um arquivo .ics (calendário universal - Apple, Android, Outlook)
+    // com um lembrete automático 1 hora antes.
+    function baixarICS() {
+      const ev = window._evento;
+      if (!ev) return;
+
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Barbearia//Agendamento//PT',
+        'BEGIN:VEVENT',
+        'UID:' + Date.now() + '@barbearia',
+        'DTSTART:' + ev.inicio,
+        'DTEND:' + ev.fim,
+        'SUMMARY:' + ev.titulo,
+        'DESCRIPTION:' + ev.detalhes,
+        'BEGIN:VALARM',
+        'TRIGGER:-PT1H',
+        'ACTION:DISPLAY',
+        'DESCRIPTION:Lembrete do seu corte',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'meu-corte.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
     async function submit() {
       const name = document.getElementById('name').value.trim();
       const phone = document.getElementById('phone').value.trim();
@@ -391,18 +427,15 @@
       }
 
       const titulo = encodeURIComponent('💈 ' + selected.service + ' - Barbearia do João');
-      const detalhes = encodeURIComponent(
-        'Serviço: ' + selected.service + ' (R$ ' + selected.price + ')\n' +
-        'Cliente: ' + name
-      );
       const datas = fmtCal(inicio) + '/' + fmtCal(fim);
 
-      const calLink = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-        '&text=' + titulo +
-        '&dates=' + datas +
-        '&details=' + detalhes;
-
-      document.getElementById('cal-btn').href = calLink;
+      // Guarda os dados do evento para o botão de calendário (.ics)
+      window._evento = {
+        titulo: '💈 ' + selected.service + ' - Barbearia do João',
+        detalhes: 'Serviço: ' + selected.service + ' (R$ ' + selected.price + ') | Cliente: ' + name,
+        inicio: fmtCal(inicio),
+        fim: fmtCal(fim)
+      };
 
       document.getElementById('form-screen').classList.add('hidden');
       document.getElementById('success-screen').classList.remove('hidden');
