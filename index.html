@@ -7,57 +7,36 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0f0f0f;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f0f; color: #fff; display: flex; justify-content: center; min-height: 100vh; padding: 20px; }
     .card { width: 100%; max-width: 440px; }
     .header { text-align: center; margin-bottom: 24px; }
     .header .logo { font-size: 40px; margin-bottom: 8px; }
     .header h1 { font-size: 22px; }
     .header p { color: #888; font-size: 14px; margin-top: 4px; }
-    label {
-      display: block;
-      font-weight: 600;
-      margin: 20px 0 10px;
-      font-size: 14px;
+    label { display: block; font-weight: 600; margin: 20px 0 10px; font-size: 14px; }
+
+    /* Barbeiros - cards de seleção */
+    .barbers { display: flex; flex-direction: column; gap: 8px; }
+    .barber {
+      display: flex; align-items: center; gap: 14px;
+      width: 100%; padding: 16px; border-radius: 14px;
+      border: 1px solid #333; background: #1a1a1a; color: #fff;
+      cursor: pointer; font-size: 16px; transition: all 0.15s; text-align: left;
     }
-    .service {
-      display: block;
-      width: 100%;
-      text-align: left;
-      padding: 14px;
-      margin-bottom: 8px;
-      border-radius: 12px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #fff;
-      cursor: pointer;
-      font-size: 15px;
-      transition: all 0.15s;
-    }
+    .barber:hover { border-color: #666; }
+    .barber.selected { border-color: #4ade80; background: #14351f; }
+    .barber .b-emoji { font-size: 30px; }
+    .barber .b-name { font-weight: 600; }
+    .barber .b-sub { color: #888; font-size: 13px; }
+
+    .service { display: block; width: 100%; text-align: left; padding: 14px; margin-bottom: 8px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: #fff; cursor: pointer; font-size: 15px; transition: all 0.15s; }
     .service:hover { border-color: #666; }
     .service.selected { border-color: #4ade80; background: #14351f; }
     .service .price { float: right; color: #4ade80; font-weight: 600; }
+    .service .dur { color: #777; font-size: 12px; display: block; margin-top: 2px; }
 
     .days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
-    .day {
-      flex: 0 0 auto;
-      width: 64px;
-      padding: 12px 6px;
-      border-radius: 12px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #fff;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s;
-    }
+    .day { flex: 0 0 auto; width: 64px; padding: 12px 6px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: #fff; cursor: pointer; text-align: center; transition: all 0.15s; }
     .day:hover { border-color: #666; }
     .day.selected { border-color: #4ade80; background: #14351f; }
     .day .weekday { font-size: 11px; color: #888; text-transform: uppercase; }
@@ -66,100 +45,68 @@
     .day .month { font-size: 10px; color: #666; }
 
     .times { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .time {
-      padding: 12px 4px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #fff;
-      cursor: pointer;
-      text-align: center;
-      font-size: 14px;
-      transition: all 0.15s;
-    }
+    .time { padding: 12px 4px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; cursor: pointer; text-align: center; font-size: 14px; transition: all 0.15s; }
     .time:hover { border-color: #666; }
     .time.selected { border-color: #4ade80; background: #14351f; color: #4ade80; font-weight: 600; }
-    .time.taken {
-      background: #0f0f0f;
-      color: #444;
-      cursor: not-allowed;
-      text-decoration: line-through;
-      border-color: #222;
-    }
+    .time.taken { background: #0f0f0f; color: #444; cursor: not-allowed; text-decoration: line-through; border-color: #222; }
     .empty-msg { color: #666; font-size: 14px; padding: 8px 0; }
 
-    input {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #fff;
-      font-size: 16px;
-    }
+    input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 16px; }
     input:focus { outline: none; border-color: #666; }
-    .btn {
-      width: 100%;
-      padding: 16px;
-      margin-top: 24px;
-      border-radius: 12px;
-      border: none;
-      background: #4ade80;
-      color: #000;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .btn { width: 100%; padding: 16px; margin-top: 24px; border-radius: 12px; border: none; background: #4ade80; color: #000; font-size: 16px; font-weight: 600; cursor: pointer; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn:active { transform: scale(0.98); }
     .success { text-align: center; padding: 40px 20px; }
     .success .check { font-size: 56px; margin-bottom: 16px; }
     .success h2 { margin-bottom: 12px; }
     .success p { color: #aaa; line-height: 1.5; }
-    .success .detail {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 20px;
-      text-align: left;
-    }
+    .success .detail { background: #1a1a1a; border-radius: 12px; padding: 16px; margin-top: 20px; text-align: left; }
     .success .detail div { margin: 6px 0; font-size: 14px; }
     .success .detail span { color: #888; }
     .btn-secondary { background: transparent; color: #4ade80; border: 1px solid #333; margin-top: 12px; }
     .error { color: #f87171; font-size: 14px; margin-top: 12px; text-align: center; }
     .loading { color: #888; text-align: center; padding: 40px; }
+    .step { transition: opacity 0.2s; }
+    .step.disabled { opacity: 0.35; pointer-events: none; }
     .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="card">
-
     <div id="loading-screen" class="loading">Carregando...</div>
 
     <div id="form-screen" class="hidden">
       <div class="header">
         <div class="logo">💈</div>
         <h1>Barbearia do João</h1>
-        <p>Escolha seu horário</p>
+        <p>Agende seu horario</p>
       </div>
 
-      <label>1. Serviço</label>
-      <div id="services"></div>
+      <label>1. Escolha o barbeiro</label>
+      <div id="barbers" class="barbers"></div>
 
-      <label>2. Dia</label>
-      <div id="days" class="days"></div>
-
-      <label>3. Horário</label>
-      <div id="times" class="times">
-        <div class="empty-msg">Escolha um dia primeiro.</div>
+      <div id="step-service" class="step disabled">
+        <label>2. Escolha o servico</label>
+        <div id="services"></div>
       </div>
 
-      <label>4. Seus dados</label>
-      <input id="name" type="text" placeholder="Seu nome" style="margin-bottom:8px">
-      <input id="phone" type="tel" placeholder="(34) 99999-9999">
+      <div id="step-day" class="step disabled">
+        <label>3. Escolha o dia</label>
+        <div id="days" class="days"></div>
+      </div>
+
+      <div id="step-time" class="step disabled">
+        <label>4. Escolha o horario</label>
+        <div id="times" class="times"><div class="empty-msg">Escolha um dia primeiro.</div></div>
+      </div>
+
+      <div id="step-data" class="step disabled">
+        <label>5. Seus dados</label>
+        <input id="name" type="text" placeholder="Seu nome" style="margin-bottom:8px">
+        <input id="phone" type="tel" placeholder="(34) 99999-9999">
+      </div>
 
       <div id="error" class="error hidden"></div>
-
       <button class="btn" id="submit-btn" onclick="submit()">Confirmar agendamento</button>
     </div>
 
@@ -168,98 +115,107 @@
       <h2>Agendamento confirmado!</h2>
       <p id="success-msg"></p>
       <div class="detail">
-        <div><span>Serviço:</span> <b id="r-service"></b></div>
+        <div><span>Barbeiro:</span> <b id="r-barber"></b></div>
+        <div><span>Servico:</span> <b id="r-service"></b></div>
         <div><span>Nome:</span> <b id="r-name"></b></div>
-        <div><span>WhatsApp:</span> <b id="r-phone"></b></div>
         <div><span>Quando:</span> <b id="r-datetime"></b></div>
       </div>
-      <button id="ics-btn" class="btn" style="background:#4285f4; margin-top:20px;" onclick="baixarICS()">
-        📅 Adicionar à minha agenda
-      </button>
+      <button id="cal-btn" class="btn" style="background:#4285f4; margin-top:20px;" onclick="addCalendario()">📅 Adicionar a minha agenda</button>
       <button class="btn btn-secondary" onclick="location.reload()">Fazer outro agendamento</button>
     </div>
-
   </div>
 
   <script>
-    // ============================================
-    // ⚙️ CONFIGURAÇÃO DO SUPABASE
-    // Troque os dois valores abaixo pelos seus.
-    // Pegue em: Supabase -> Settings -> API
-    // ============================================
     const SUPABASE_URL = 'https://eaxnvyqriumqrlhqavjz.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_x-5YEwSadsYimgtYUI0Xew_52km07Zt';
-
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ⚙️ NÚMERO DE WHATSAPP DO BARBEIRO (com DDD, só números)
-    // Troque pelo número real. Ex: '34991953511'
-    const WHATSAPP_BARBEIRO = '34999999999';
-
-    // Configuração de horário (fixa por enquanto)
     const HORARIO_ABERTURA = 9;
     const HORARIO_FECHAMENTO = 19;
     const DIAS_A_MOSTRAR = 7;
     const TRABALHA_DOMINGO = false;
 
-    let selected = { service: null, price: null, day: null, time: null };
-    let ocupados = []; // preenchido do banco
+    let barbeiros = [];
+    let todosServicos = [];
+    let ocupados = [];
+    let selected = { barbeiro: null, barbeiroNome: null, service: null, price: null, day: null, time: null };
 
-    const SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
     const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-    // Carrega serviços e agendamentos ocupados do banco
     async function iniciar() {
       try {
-        // Busca serviços ativos
-        const { data: servicos, error: e1 } = await db
-          .from('services')
-          .select('*')
-          .eq('ativo', true)
-          .order('id');
-
+        const { data: barbs, error: e1 } = await db.from('barbeiros').select('*').eq('ativo', true).order('id');
         if (e1) throw e1;
+        barbeiros = barbs || [];
 
-        // Busca agendamentos futuros (para marcar horários ocupados)
-        const hoje = new Date().toISOString().split('T')[0];
-        const { data: ags, error: e2 } = await db
-          .from('appointments')
-          .select('dia, hora, status')
-          .gte('dia', hoje)
-          .neq('status', 'cancelled');
-
+        const { data: servs, error: e2 } = await db.from('services').select('*').eq('ativo', true).order('id');
         if (e2) throw e2;
+        todosServicos = servs || [];
 
-        ocupados = (ags || []).map(a => a.dia + ' ' + a.hora);
+        const hoje = new Date().toISOString().split('T')[0];
+        const { data: ags, error: e3 } = await db.from('appointments').select('barbeiro_id, dia, hora, status').gte('dia', hoje).neq('status', 'cancelled');
+        if (e3) throw e3;
+        ocupados = (ags || []).map(a => a.barbeiro_id + '|' + a.dia + ' ' + a.hora);
 
-        renderServicos(servicos || []);
+        renderBarbeiros();
         gerarDias();
-
         document.getElementById('loading-screen').classList.add('hidden');
         document.getElementById('form-screen').classList.remove('hidden');
       } catch (err) {
-        document.getElementById('loading-screen').innerHTML =
-          'Erro ao carregar. Verifique a configuração do Supabase.<br><br>' +
-          '<small style="color:#666">' + err.message + '</small>';
+        document.getElementById('loading-screen').innerHTML = 'Erro ao carregar.<br><small style="color:#666">' + err.message + '</small>';
       }
     }
 
-    function renderServicos(servicos) {
+    function renderBarbeiros() {
+      const c = document.getElementById('barbers');
+      if (barbeiros.length === 0) { c.innerHTML = '<div class="empty-msg">Nenhum barbeiro disponivel.</div>'; return; }
+      c.innerHTML = '';
+      barbeiros.forEach(b => {
+        const qtd = todosServicos.filter(s => s.barbeiro_id === b.id).length;
+        const btn = document.createElement('button');
+        btn.className = 'barber';
+        btn.innerHTML = '<span class="b-emoji">' + (b.foto_emoji || '💈') + '</span>' +
+          '<span><span class="b-name">' + b.nome + '</span><br><span class="b-sub">' + qtd + ' servico(s)</span></span>';
+        btn.onclick = () => selecionarBarbeiro(btn, b);
+        c.appendChild(btn);
+      });
+    }
+
+    function selecionarBarbeiro(btn, b) {
+      document.querySelectorAll('.barber').forEach(x => x.classList.remove('selected'));
+      btn.classList.add('selected');
+      selected.barbeiro = b.id;
+      selected.barbeiroNome = b.nome;
+      // Reset dos passos seguintes
+      selected.service = null; selected.price = null; selected.day = null; selected.time = null;
+      document.getElementById('times').innerHTML = '<div class="empty-msg">Escolha um dia primeiro.</div>';
+      document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+
+      renderServicos(b.id);
+      // Libera o passo de servico
+      document.getElementById('step-service').classList.remove('disabled');
+      document.getElementById('step-day').classList.add('disabled');
+      document.getElementById('step-time').classList.add('disabled');
+      document.getElementById('step-data').classList.add('disabled');
+    }
+
+    function renderServicos(barbeiroId) {
       const container = document.getElementById('services');
-      if (servicos.length === 0) {
-        container.innerHTML = '<div class="empty-msg">Nenhum serviço disponível.</div>';
-        return;
-      }
+      const servs = todosServicos.filter(s => s.barbeiro_id === barbeiroId);
+      if (servs.length === 0) { container.innerHTML = '<div class="empty-msg">Este barbeiro ainda nao cadastrou servicos.</div>'; return; }
       container.innerHTML = '';
-      servicos.forEach(s => {
+      servs.forEach(s => {
         const btn = document.createElement('button');
         btn.className = 'service';
-        btn.innerHTML = s.nome + ' <span class="price">R$ ' + Number(s.preco).toFixed(0) + '</span>';
+        btn.innerHTML = s.nome + ' <span class="price">R$ ' + Number(s.preco).toFixed(0) + '</span>' +
+          '<span class="dur">' + s.duracao_minutos + ' min</span>';
         btn.onclick = () => {
           document.querySelectorAll('.service').forEach(x => x.classList.remove('selected'));
           btn.classList.add('selected');
           selected.service = s.nome;
           selected.price = Number(s.preco);
+          document.getElementById('step-day').classList.remove('disabled');
         };
         container.appendChild(btn);
       });
@@ -272,19 +228,12 @@
       let mostrados = 0, offset = 0;
       while (mostrados < DIAS_A_MOSTRAR) {
         const data = new Date(hoje);
-        data.setDate(hoje.getDate() + offset);
-        offset++;
+        data.setDate(hoje.getDate() + offset); offset++;
         if (!TRABALHA_DOMINGO && data.getDay() === 0) continue;
-        const ano = data.getFullYear();
-        const mes = String(data.getMonth() + 1).padStart(2, '0');
-        const dia = String(data.getDate()).padStart(2, '0');
-        const iso = ano + '-' + mes + '-' + dia;
+        const iso = data.getFullYear() + '-' + String(data.getMonth()+1).padStart(2,'0') + '-' + String(data.getDate()).padStart(2,'0');
         const btn = document.createElement('button');
         btn.className = 'day';
-        btn.innerHTML =
-          '<div class="weekday">' + SEMANA[data.getDay()] + '</div>' +
-          '<div class="num">' + data.getDate() + '</div>' +
-          '<div class="month">' + MESES[data.getMonth()] + '</div>';
+        btn.innerHTML = '<div class="weekday">' + SEMANA[data.getDay()] + '</div><div class="num">' + data.getDate() + '</div><div class="month">' + MESES[data.getMonth()] + '</div>';
         btn.onclick = () => selectDay(btn, iso, data);
         container.appendChild(btn);
         mostrados++;
@@ -294,167 +243,107 @@
     function selectDay(btn, iso, dataObj) {
       document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
       btn.classList.add('selected');
-      selected.day = iso;
-      selected.time = null;
-
+      selected.day = iso; selected.time = null;
       const container = document.getElementById('times');
       container.innerHTML = '';
       const agora = new Date();
       const ehHoje = dataObj.toDateString() === agora.toDateString();
-
       for (let h = HORARIO_ABERTURA; h < HORARIO_FECHAMENTO; h++) {
         for (let m of [0, 30]) {
-          const horaStr = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-          const chave = iso + ' ' + horaStr;
+          const horaStr = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+          const chave = selected.barbeiro + '|' + iso + ' ' + horaStr;
           const t = document.createElement('button');
           t.className = 'time';
           t.textContent = horaStr;
           const ocupado = ocupados.includes(chave);
-          const jaPassou = ehHoje && (h < agora.getHours() ||
-                            (h === agora.getHours() && m <= agora.getMinutes()));
-          if (ocupado || jaPassou) {
-            t.classList.add('taken');
-          } else {
+          const jaPassou = ehHoje && (h < agora.getHours() || (h === agora.getHours() && m <= agora.getMinutes()));
+          if (ocupado || jaPassou) { t.classList.add('taken'); }
+          else {
             t.onclick = () => {
               document.querySelectorAll('.time').forEach(x => x.classList.remove('selected'));
               t.classList.add('selected');
               selected.time = horaStr;
+              document.getElementById('step-data').classList.remove('disabled');
             };
           }
           container.appendChild(t);
         }
       }
+      document.getElementById('step-time').classList.remove('disabled');
     }
 
     function showError(msg) {
       const e = document.getElementById('error');
-      e.textContent = msg;
-      e.classList.remove('hidden');
-    }
-
-    // Adiciona ao calendário escolhendo o melhor método pro aparelho:
-    // - iPhone/iPad/Safari -> arquivo .ics (abre no calendário Apple)
-    // - Android/Chrome/outros -> Google Calendar (abre o app nativo)
-    function baixarICS() {
-      const ev = window._evento;
-      if (!ev) return;
-
-      const ua = navigator.userAgent || '';
-      const ehApple = /iPhone|iPad|iPod|Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|CriOS/.test(ua);
-
-      if (!ehApple) {
-        // Android, Chrome, desktop -> Google Calendar
-        const titulo = encodeURIComponent(ev.titulo);
-        const detalhes = encodeURIComponent(ev.detalhes);
-        const datas = ev.inicio + '/' + ev.fim;
-        const link = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-          '&text=' + titulo + '&dates=' + datas + '&details=' + detalhes;
-        window.open(link, '_blank');
-        return;
-      }
-
-      // iPhone/Safari -> arquivo .ics com lembrete 1h antes
-      const ics = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Barbearia//Agendamento//PT',
-        'BEGIN:VEVENT',
-        'UID:' + Date.now() + '@barbearia',
-        'DTSTART:' + ev.inicio,
-        'DTEND:' + ev.fim,
-        'SUMMARY:' + ev.titulo,
-        'DESCRIPTION:' + ev.detalhes,
-        'BEGIN:VALARM',
-        'TRIGGER:-PT1H',
-        'ACTION:DISPLAY',
-        'DESCRIPTION:Lembrete do seu corte',
-        'END:VALARM',
-        'END:VEVENT',
-        'END:VCALENDAR'
-      ].join('\r\n');
-
-      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'meu-corte.ics';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      e.textContent = msg; e.classList.remove('hidden');
     }
 
     async function submit() {
       const name = document.getElementById('name').value.trim();
       const phone = document.getElementById('phone').value.trim();
-
-      if (!selected.service) return showError('Escolha um serviço.');
-      if (!selected.day)     return showError('Escolha um dia.');
-      if (!selected.time)    return showError('Escolha um horário.');
-      if (!name)             return showError('Digite seu nome.');
-      if (!phone)            return showError('Digite seu WhatsApp.');
+      if (!selected.barbeiro) return showError('Escolha um barbeiro.');
+      if (!selected.service) return showError('Escolha um servico.');
+      if (!selected.day) return showError('Escolha um dia.');
+      if (!selected.time) return showError('Escolha um horario.');
+      if (!name) return showError('Digite seu nome.');
+      if (!phone) return showError('Digite seu WhatsApp.');
 
       document.getElementById('error').classList.add('hidden');
       const btn = document.getElementById('submit-btn');
-      btn.disabled = true;
-      btn.textContent = 'Agendando...';
+      btn.disabled = true; btn.textContent = 'Agendando...';
 
-      // Salva no banco
       const { error } = await db.from('appointments').insert({
-        cliente_nome: name,
-        cliente_telefone: phone,
-        servico_nome: selected.service,
-        servico_preco: selected.price,
-        dia: selected.day,
-        hora: selected.time,
-        status: 'confirmed'
+        barbeiro_id: selected.barbeiro,
+        cliente_nome: name, cliente_telefone: phone,
+        servico_nome: selected.service, servico_preco: selected.price,
+        dia: selected.day, hora: selected.time, status: 'confirmed'
       });
 
       if (error) {
-        btn.disabled = false;
-        btn.textContent = 'Confirmar agendamento';
-        // Código 23505 = horário já ocupado (trava do banco)
-        if (error.code === '23505') {
-          showError('Ops! Esse horário acabou de ser reservado. Escolha outro.');
-        } else {
-          showError('Erro ao agendar. Tente novamente.');
-        }
+        btn.disabled = false; btn.textContent = 'Confirmar agendamento';
+        if (error.code === '23505') showError('Ops! Esse horario acabou de ser reservado. Escolha outro.');
+        else showError('Erro ao agendar. Tente novamente.');
         return;
       }
 
-      // Mostra tela de sucesso
       const [ano, mes, dia] = selected.day.split('-');
-      document.getElementById('success-msg').textContent = name + ', seu horário está reservado!';
+      document.getElementById('success-msg').textContent = name + ', seu horario esta reservado!';
+      document.getElementById('r-barber').textContent = selected.barbeiroNome;
       document.getElementById('r-service').textContent = selected.service + ' (R$ ' + selected.price + ')';
       document.getElementById('r-name').textContent = name;
-      document.getElementById('r-phone').textContent = phone;
-      document.getElementById('r-datetime').textContent = dia + '/' + mes + '/' + ano + ' às ' + selected.time;
+      document.getElementById('r-datetime').textContent = dia + '/' + mes + '/' + ano + ' as ' + selected.time;
 
-      // Monta o link para adicionar ao Google Calendar (com lembrete automático)
-      // Duração padrão de 45 min. Formato de data exigido: AAAAMMDDTHHMMSS
+      // Prepara evento pro calendario
       const [hh, mm] = selected.time.split(':').map(Number);
-      const inicio = new Date(Number(ano), Number(mes) - 1, Number(dia), hh, mm);
-      const fim = new Date(inicio.getTime() + 45 * 60000); // +45 minutos
-
-      function fmtCal(d) {
-        const p = n => String(n).padStart(2, '0');
-        return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) +
-               'T' + p(d.getHours()) + p(d.getMinutes()) + '00';
-      }
-
-      const titulo = encodeURIComponent('💈 ' + selected.service + ' - Barbearia do João');
-      const datas = fmtCal(inicio) + '/' + fmtCal(fim);
-
-      // Guarda os dados do evento para o botão de calendário (.ics)
+      const inicio = new Date(Number(ano), Number(mes)-1, Number(dia), hh, mm);
+      const fim = new Date(inicio.getTime() + 45*60000);
+      function fmt(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'T'+p(d.getHours())+p(d.getMinutes())+'00';}
       window._evento = {
-        titulo: '💈 ' + selected.service + ' - Barbearia do João',
-        detalhes: 'Serviço: ' + selected.service + ' (R$ ' + selected.price + ') | Cliente: ' + name,
-        inicio: fmtCal(inicio),
-        fim: fmtCal(fim)
+        titulo: '💈 ' + selected.service + ' com ' + selected.barbeiroNome,
+        detalhes: 'Servico: ' + selected.service + ' (R$ ' + selected.price + ') | Barbeiro: ' + selected.barbeiroNome,
+        inicio: fmt(inicio), fim: fmt(fim)
       };
 
       document.getElementById('form-screen').classList.add('hidden');
       document.getElementById('success-screen').classList.remove('hidden');
+    }
+
+    function addCalendario() {
+      const ev = window._evento; if (!ev) return;
+      const ua = navigator.userAgent || '';
+      const ehApple = /iPhone|iPad|iPod|Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|CriOS/.test(ua);
+      if (!ehApple) {
+        const link = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' +
+          encodeURIComponent(ev.titulo) + '&dates=' + ev.inicio + '/' + ev.fim + '&details=' + encodeURIComponent(ev.detalhes);
+        window.open(link, '_blank'); return;
+      }
+      const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Barbearia//PT','BEGIN:VEVENT','UID:'+Date.now()+'@barbearia',
+        'DTSTART:'+ev.inicio,'DTEND:'+ev.fim,'SUMMARY:'+ev.titulo,'DESCRIPTION:'+ev.detalhes,
+        'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:Lembrete do seu corte','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'meu-corte.ics';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     iniciar();
