@@ -26,6 +26,7 @@
     .barber:hover { border-color: #666; }
     .barber.selected { border-color: #4ade80; background: #14351f; }
     .barber .b-emoji { font-size: 30px; }
+    .barber .b-foto { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: 0 0 auto; }
     .barber .b-name { font-weight: 600; }
     .barber .b-sub { color: #888; font-size: 13px; }
 
@@ -53,6 +54,15 @@
 
     input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 16px; }
     input:focus { outline: none; border-color: #666; }
+    select {
+      width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #333;
+      background: #1a1a1a; color: #fff; font-size: 16px; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+      background-repeat: no-repeat; background-position: right 16px center;
+    }
+    select:focus { outline: none; border-color: #4ade80; }
+    select option { background: #1a1a1a; color: #fff; }
     .btn { width: 100%; padding: 16px; margin-top: 24px; border-radius: 12px; border: none; background: #4ade80; color: #000; font-size: 16px; font-weight: 600; cursor: pointer; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn:active { transform: scale(0.98); }
@@ -86,8 +96,10 @@
       <div id="barbers" class="barbers"></div>
 
       <div id="step-service" class="step disabled">
-        <label>2. Escolha o servico</label>
-        <div id="services"></div>
+        <label>2. Escolha o serviço</label>
+        <select id="sel-servico" onchange="onServicoChange()">
+          <option value="">Selecione o serviço</option>
+        </select>
       </div>
 
       <div id="step-day" class="step disabled">
@@ -173,9 +185,12 @@
       c.innerHTML = '';
       barbeiros.forEach(b => {
         const qtd = todosServicos.filter(s => s.barbeiro_id === b.id).length;
+        const avatar = b.foto_url
+          ? '<img src="' + b.foto_url + '" class="b-foto">'
+          : '<span class="b-emoji">' + (b.foto_emoji || '💈') + '</span>';
         const btn = document.createElement('button');
         btn.className = 'barber';
-        btn.innerHTML = '<span class="b-emoji">' + (b.foto_emoji || '💈') + '</span>' +
+        btn.innerHTML = avatar +
           '<span><span class="b-name">' + b.nome + '</span><br><span class="b-sub">' + qtd + ' servico(s)</span></span>';
         btn.onclick = () => selecionarBarbeiro(btn, b);
         c.appendChild(btn);
@@ -187,13 +202,11 @@
       btn.classList.add('selected');
       selected.barbeiro = b.id;
       selected.barbeiroNome = b.nome;
-      // Reset dos passos seguintes
       selected.service = null; selected.price = null; selected.day = null; selected.time = null;
+      document.getElementById('sel-servico').value = '';
       document.getElementById('times').innerHTML = '<div class="empty-msg">Escolha um dia primeiro.</div>';
       document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
-
       renderServicos(b.id);
-      // Libera o passo de servico
       document.getElementById('step-service').classList.remove('disabled');
       document.getElementById('step-day').classList.add('disabled');
       document.getElementById('step-time').classList.add('disabled');
@@ -201,24 +214,34 @@
     }
 
     function renderServicos(barbeiroId) {
-      const container = document.getElementById('services');
+      const sel = document.getElementById('sel-servico');
       const servs = todosServicos.filter(s => s.barbeiro_id === barbeiroId);
-      if (servs.length === 0) { container.innerHTML = '<div class="empty-msg">Este barbeiro ainda nao cadastrou servicos.</div>'; return; }
-      container.innerHTML = '';
+      if (servs.length === 0) { sel.innerHTML = '<option value="">Este barbeiro nao tem servicos</option>'; return; }
+      sel.innerHTML = '<option value="">Selecione o servico</option>';
       servs.forEach(s => {
-        const btn = document.createElement('button');
-        btn.className = 'service';
-        btn.innerHTML = s.nome + ' <span class="price">R$ ' + Number(s.preco).toFixed(0) + '</span>' +
-          '<span class="dur">' + s.duracao_minutos + ' min</span>';
-        btn.onclick = () => {
-          document.querySelectorAll('.service').forEach(x => x.classList.remove('selected'));
-          btn.classList.add('selected');
-          selected.service = s.nome;
-          selected.price = Number(s.preco);
-          document.getElementById('step-day').classList.remove('disabled');
-        };
-        container.appendChild(btn);
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.nome + ' - R$ ' + Number(s.preco).toFixed(0) + ' (' + s.duracao_minutos + ' min)';
+        sel.appendChild(opt);
       });
+    }
+
+    function onServicoChange() {
+      const id = parseInt(document.getElementById('sel-servico').value);
+      selected.day = null; selected.time = null;
+      document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+      document.getElementById('times').innerHTML = '<div class="empty-msg">Escolha um dia primeiro.</div>';
+      document.getElementById('step-time').classList.add('disabled');
+      document.getElementById('step-data').classList.add('disabled');
+      if (!id) {
+        selected.service = null; selected.price = null;
+        document.getElementById('step-day').classList.add('disabled');
+        return;
+      }
+      const s = todosServicos.find(x => x.id === id);
+      selected.service = s.nome;
+      selected.price = Number(s.preco);
+      document.getElementById('step-day').classList.remove('disabled');
     }
 
     function gerarDias() {
