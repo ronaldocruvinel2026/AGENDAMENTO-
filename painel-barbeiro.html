@@ -388,6 +388,44 @@
       await carregarTudo();
     }
 
+    let editandoBarbId = null;
+    let fotoEditSelecionada = null;
+
+    function iniciarEdicaoBarb(id) { editandoBarbId = id; fotoEditSelecionada = null; renderBarbeiros(); }
+    function cancelarEdicaoBarb() { editandoBarbId = null; fotoEditSelecionada = null; renderBarbeiros(); }
+
+    function previewEditFoto(input, id) {
+      const file = input.files[0];
+      if (!file) return;
+      fotoEditSelecionada = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('edit-foto-preview-' + id).innerHTML =
+          '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function salvarBarbeiro(id) {
+      const nome = document.getElementById('edit-barb-nome-' + id).value.trim();
+      if (!nome) { alert('Digite o nome.'); return; }
+
+      const dados = { nome };
+      // Se trocou a foto, envia a nova pro Storage
+      if (fotoEditSelecionada) {
+        const ext = fotoEditSelecionada.name.split('.').pop();
+        const nomeArquivo = 'barbeiro_' + Date.now() + '.' + ext;
+        const { error: upErr } = await db.storage.from('fotos').upload(nomeArquivo, fotoEditSelecionada);
+        if (upErr) { alert('Erro ao enviar a foto.'); return; }
+        const { data: pub } = db.storage.from('fotos').getPublicUrl(nomeArquivo);
+        dados.foto_url = pub.publicUrl;
+      }
+
+      await db.from('barbeiros').update(dados).eq('id', id);
+      editandoBarbId = null; fotoEditSelecionada = null;
+      await carregarTudo();
+    }
+
     function renderBarbeiros() {
       const lista = document.getElementById('lista-barbeiros');
       if (barbeiros.length === 0) { lista.innerHTML = '<div class="empty">Nenhum barbeiro cadastrado ainda.</div>'; return; }
@@ -395,13 +433,35 @@
       barbeiros.forEach(b => {
         const qtdServ = servicos.filter(s => s.barbeiro_id === b.id).length;
         const div = document.createElement('div');
-        div.className = 'barb-item';
         const avatar = b.foto_url
           ? '<img src="' + b.foto_url + '" style="width:48px;height:48px;border-radius:10px;object-fit:cover;">'
           : '<div class="barb-emoji">' + (b.foto_emoji || '💈') + '</div>';
-        div.innerHTML = avatar +
-          '<div class="barb-info"><div class="barb-name">' + b.nome + '</div><div class="barb-count">' + qtdServ + ' servico(s)</div></div>' +
-          '<button class="icon-btn" onclick="removerBarbeiro(' + b.id + ')">&#10005;</button>';
+
+        if (b.id === editandoBarbId) {
+          div.className = 'barb-item';
+          div.style.flexWrap = 'wrap';
+          div.innerHTML =
+            '<div style="width:100%; display:flex; flex-direction:column; gap:10px;">' +
+              '<div style="display:flex; align-items:center; gap:12px;">' +
+                '<div id="edit-foto-preview-' + b.id + '" style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex:0 0 auto;">' + avatar + '</div>' +
+                '<button type="button" class="btn" style="width:auto;margin:0;padding:10px 14px;background:#2a2a2a;color:#fff;font-size:13px;" onclick="document.getElementById(\'edit-foto-input-' + b.id + '\').click()">Trocar foto</button>' +
+                '<input id="edit-foto-input-' + b.id + '" type="file" accept="image/*" style="display:none" onchange="previewEditFoto(this, ' + b.id + ')">' +
+              '</div>' +
+              '<input id="edit-barb-nome-' + b.id + '" type="text" value="' + b.nome.replace(/"/g, '&quot;') + '">' +
+              '<div style="display:flex; gap:8px;">' +
+                '<button class="btn-save" onclick="salvarBarbeiro(' + b.id + ')">Salvar</button>' +
+                '<button class="btn-cancel-edit" onclick="cancelarEdicaoBarb()">Cancelar</button>' +
+              '</div>' +
+            '</div>';
+        } else {
+          div.className = 'barb-item';
+          div.innerHTML = avatar +
+            '<div class="barb-info"><div class="barb-name">' + b.nome + '</div><div class="barb-count">' + qtdServ + ' servico(s)</div></div>' +
+            '<div class="svc-actions">' +
+              '<button class="icon-btn edit" onclick="iniciarEdicaoBarb(' + b.id + ')">&#9998;</button>' +
+              '<button class="icon-btn" onclick="removerBarbeiro(' + b.id + ')">&#10005;</button>' +
+            '</div>';
+        }
         lista.appendChild(div);
       });
     }
