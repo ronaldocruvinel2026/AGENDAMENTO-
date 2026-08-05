@@ -137,7 +137,14 @@
         <div class="panel-title">Adicionar barbeiro</div>
         <div class="panel-sub">Cadastre os profissionais da barbearia.</div>
         <div class="form-row"><label>Nome</label><input id="barb-name" type="text" placeholder="Ex: Carlos"></div>
-        <div class="form-row"><label>Emoji (avatar)</label><input id="barb-emoji" type="text" placeholder="ok" maxlength="2" value="💈"></div>
+        <div class="form-row">
+          <label>Foto (opcional)</label>
+          <div id="foto-preview-wrap" style="display:flex; align-items:center; gap:12px;">
+            <div id="foto-preview" style="width:64px; height:64px; border-radius:12px; background:#1a1a1a; border:1px solid #333; display:flex; align-items:center; justify-content:center; font-size:28px; overflow:hidden;">💈</div>
+            <button type="button" class="btn" style="width:auto; margin:0; padding:12px 16px; background:#2a2a2a; color:#fff;" onclick="document.getElementById('barb-foto-input').click()">Escolher da galeria</button>
+          </div>
+          <input id="barb-foto-input" type="file" accept="image/*" style="display:none" onchange="previewFoto(this)">
+        </div>
         <button class="btn" id="add-barb-btn" onclick="adicionarBarbeiro()">+ Adicionar barbeiro</button>
       </div>
       <div class="panel">
@@ -333,16 +340,44 @@
       });
     }
 
+    let fotoSelecionada = null; // arquivo da foto escolhida
+
+    function previewFoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+      fotoSelecionada = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('foto-preview').innerHTML =
+          '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+      };
+      reader.readAsDataURL(file);
+    }
+
     async function adicionarBarbeiro() {
       const nome = document.getElementById('barb-name').value.trim();
-      const emoji = document.getElementById('barb-emoji').value.trim() || '💈';
       if (!nome) { alert('Digite o nome do barbeiro.'); return; }
-      const btn = document.getElementById('add-barb-btn'); btn.disabled = true; btn.textContent = 'Adicionando...';
-      const { error } = await db.from('barbeiros').insert({ nome, foto_emoji: emoji, ativo: true });
+      const btn = document.getElementById('add-barb-btn'); btn.disabled = true; btn.textContent = 'Salvando...';
+
+      let foto_url = null;
+      // Se escolheu foto, envia pro Storage
+      if (fotoSelecionada) {
+        const ext = fotoSelecionada.name.split('.').pop();
+        const nomeArquivo = 'barbeiro_' + Date.now() + '.' + ext;
+        const { error: upErr } = await db.storage.from('fotos').upload(nomeArquivo, fotoSelecionada);
+        if (upErr) { alert('Erro ao enviar a foto.'); btn.disabled = false; btn.textContent = '+ Adicionar barbeiro'; return; }
+        const { data: pub } = db.storage.from('fotos').getPublicUrl(nomeArquivo);
+        foto_url = pub.publicUrl;
+      }
+
+      const { error } = await db.from('barbeiros').insert({ nome, foto_emoji: '💈', foto_url, ativo: true });
       btn.disabled = false; btn.textContent = '+ Adicionar barbeiro';
       if (error) { alert('Erro ao adicionar.'); return; }
+
       document.getElementById('barb-name').value = '';
-      document.getElementById('barb-emoji').value = '💈';
+      document.getElementById('foto-preview').innerHTML = '💈';
+      document.getElementById('barb-foto-input').value = '';
+      fotoSelecionada = null;
       await carregarTudo();
     }
     async function removerBarbeiro(id) {
@@ -361,7 +396,10 @@
         const qtdServ = servicos.filter(s => s.barbeiro_id === b.id).length;
         const div = document.createElement('div');
         div.className = 'barb-item';
-        div.innerHTML = '<div class="barb-emoji">' + (b.foto_emoji || '💈') + '</div>' +
+        const avatar = b.foto_url
+          ? '<img src="' + b.foto_url + '" style="width:48px;height:48px;border-radius:10px;object-fit:cover;">'
+          : '<div class="barb-emoji">' + (b.foto_emoji || '💈') + '</div>';
+        div.innerHTML = avatar +
           '<div class="barb-info"><div class="barb-name">' + b.nome + '</div><div class="barb-count">' + qtdServ + ' servico(s)</div></div>' +
           '<button class="icon-btn" onclick="removerBarbeiro(' + b.id + ')">&#10005;</button>';
         lista.appendChild(div);
